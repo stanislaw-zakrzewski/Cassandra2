@@ -1,0 +1,44 @@
+version: '2.1'
+services:
+
+  app2:
+    container_name: app2
+    build: .
+    ports:
+      - 8080:8080
+    environment:
+      - SPRING_PROFILES_ACTIVE=DC2
+    depends_on:
+      seed2:
+        condition: service_healthy
+
+  seed2:
+    container_name: seed2
+    build: ./cassandra
+    environment:
+      - DATACENTER=DC2
+    ports:
+      - 9042:9042
+      - 7000:7000
+    volumes:
+      - seed2:/var/lib/cassandra
+    healthcheck:
+      test: ["CMD-SHELL", "[ $$(/opt/cassandra/bin/nodetool statusgossip) = running ]"]
+      interval: 30s
+      timeout: 60s
+      retries: 5
+
+  node2:
+    container_name: node2
+    build: ./cassandra
+    environment:
+      - DATACENTER=DC2
+    depends_on:
+      - seed2
+    volumes:
+      - node2:/var/lib/cassandra
+
+
+volumes:
+  seed2:
+  node2:
